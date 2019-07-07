@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# 防止过拟合的方法是：
+# 获取更多的训练数据，减小网络容量，添加权重正则化，添加dropout
 
 import tensorflow as tf
 tf.__version__
@@ -38,22 +40,44 @@ y_train = np.asarray(train_labels).astype('float32')
 y_test = np.asarray(test_labels).astype('float32')
 
 
+# 导入模型层
+from tensorflow.keras import models
+# 导入层
+from tensorflow.keras import layers
 
-
-from keras import models
-from keras import layers
-
+# 建立一个序贯模型，是多个网络层的线性堆叠，也就是一条路走到黑，
+#详细信息见：https://keras-cn.readthedocs.io/en/latest/getting_started/sequential_model/
 original_model = models.Sequential()
+# 输入维度（10000，）输出维度（16，）激活函数是relu
 original_model.add(layers.Dense(16, activation='relu', input_shape=(10000,)))
+# 输入维度(16,)，输出维度(16,)，激活函数是relu
 original_model.add(layers.Dense(16, activation='relu'))
+# 输入维度是(16,),输出维度(1,),激活函数是sigmoid
 original_model.add(layers.Dense(1, activation='sigmoid'))
+original_model.summary()
+#Model: "sequential_2"
+#_________________________________________________________________
+#Layer (type)                 Output Shape              Param #   
+#=================================================================
+#dense_6 (Dense)              (None, 16)                160016    
+#_________________________________________________________________
+#dense_7 (Dense)              (None, 16)                272       
+#_________________________________________________________________
+#dense_8 (Dense)              (None, 1)                 17        
+#=================================================================
+#Total params: 160,305
+#Trainable params: 160,305
+#Non-trainable params: 0
+#_________________________________________________________________
 
+# compile的功能是编译模型，对学习过程进行配置，optimizer是优化器，
+# loss是损失函数，metrics是指标列表
 original_model.compile(optimizer='rmsprop',
                        loss='binary_crossentropy',
                        metrics=['acc'])
 
 
-
+#构建小的模型
 smaller_model = models.Sequential()
 smaller_model.add(layers.Dense(4, activation='relu', input_shape=(10000,)))
 smaller_model.add(layers.Dense(4, activation='relu'))
@@ -63,35 +87,25 @@ smaller_model.compile(optimizer='rmsprop',
                       loss='binary_crossentropy',
                       metrics=['acc'])
 
-
-# 
-
-
-
+# 使用512个样本组成的小批量，将模型训练20个轮次，监控留出的10000个样本上的损失和精度，可以通过将验证数据传入validation_data参数来完成
+# 调用fit方法会返回一个History对象，这个对象有一个成员history，它是一个字典，包含训练过程中的所有数据
 original_hist = original_model.fit(x_train, y_train,
                                    epochs=20,
                                    batch_size=512,
                                    validation_data=(x_test, y_test))
 
-
-# In[7]:
-
-
+# 使用512个样本组成的小批量，将模型训练20个轮次，监控留出的10000个样本上的损失和精度，可以通过将验证数据传入validation_data参数来完成
+# 调用fit方法会返回一个History对象，这个对象有一个成员history，它是一个字典，包含训练过程中的所有数据
 smaller_model_hist = smaller_model.fit(x_train, y_train,
                                        epochs=20,
                                        batch_size=512,
                                        validation_data=(x_test, y_test))
 
 
-# In[8]:
-
-
 epochs = range(1, 21)
 original_val_loss = original_hist.history['val_loss']
 smaller_model_val_loss = smaller_model_hist.history['val_loss']
 
-
-# In[9]:
 
 
 import matplotlib.pyplot as plt
@@ -106,40 +120,24 @@ plt.legend()
 
 plt.show()
 
-
-# 
-# As you can see, the smaller network starts overfitting later than the reference one (after 6 epochs rather than 4) and its performance 
-# degrades much more slowly once it starts overfitting.
-# 
-# Now, for kicks, let's add to this benchmark a network that has much more capacity, far more than the problem would warrant:
-
-# In[11]:
-
-
+# 建立一个更大的模型
 bigger_model = models.Sequential()
 bigger_model.add(layers.Dense(512, activation='relu', input_shape=(10000,)))
 bigger_model.add(layers.Dense(512, activation='relu'))
 bigger_model.add(layers.Dense(1, activation='sigmoid'))
-
+bigger_model.summary()
+# compile的功能是编译模型，对学习过程进行配置，optimizer是优化器，
+# loss是损失函数,这里是分类交叉熵，metrics是指标列表
 bigger_model.compile(optimizer='rmsprop',
                      loss='binary_crossentropy',
                      metrics=['acc'])
 
-
-# In[12]:
-
-
+# 使用512个样本组成的小批量，将模型训练20个轮次，监控留出的10000个样本上的损失和精度，可以通过将验证数据传入validation_data参数来完成
+# 调用fit方法会返回一个History对象，这个对象有一个成员history，它是一个字典，包含训练过程中的所有数据
 bigger_model_hist = bigger_model.fit(x_train, y_train,
                                      epochs=20,
                                      batch_size=512,
                                      validation_data=(x_test, y_test))
-
-
-# Here's how the bigger network fares compared to the reference one. The dots are the validation loss values of the bigger network, and the 
-# crosses are the initial network.
-
-# In[26]:
-
 
 bigger_model_val_loss = bigger_model_hist.history['val_loss']
 
@@ -148,18 +146,7 @@ plt.plot(epochs, bigger_model_val_loss, 'bo', label='Bigger model')
 plt.xlabel('Epochs')
 plt.ylabel('Validation loss')
 plt.legend()
-
 plt.show()
-
-
-# 
-# The bigger network starts overfitting almost right away, after just one epoch, and overfits much more severely. Its validation loss is also 
-# more noisy.
-# 
-# Meanwhile, here are the training losses for our two networks:
-
-# In[28]:
-
 
 original_train_loss = original_hist.history['loss']
 bigger_model_train_loss = bigger_model_hist.history['loss']
@@ -169,41 +156,10 @@ plt.plot(epochs, bigger_model_train_loss, 'bo', label='Bigger model')
 plt.xlabel('Epochs')
 plt.ylabel('Training loss')
 plt.legend()
-
 plt.show()
 
+from tensorflow.keras import regularizers
 
-# As you can see, the bigger network gets its training loss near zero very quickly. The more capacity the network has, the quicker it will be 
-# able to model the training data (resulting in a low training loss), but the more susceptible it is to overfitting (resulting in a large 
-# difference between the training and validation loss).
-
-# ## Adding weight regularization
-# 
-# 
-# You may be familiar with _Occam's Razor_ principle: given two explanations for something, the explanation most likely to be correct is the 
-# "simplest" one, the one that makes the least amount of assumptions. This also applies to the models learned by neural networks: given some 
-# training data and a network architecture, there are multiple sets of weights values (multiple _models_) that could explain the data, and 
-# simpler models are less likely to overfit than complex ones.
-# 
-# A "simple model" in this context is a model where the distribution of parameter values has less entropy (or a model with fewer 
-# parameters altogether, as we saw in the section above). Thus a common way to mitigate overfitting is to put constraints on the complexity 
-# of a network by forcing its weights to only take small values, which makes the distribution of weight values more "regular". This is called 
-# "weight regularization", and it is done by adding to the loss function of the network a _cost_ associated with having large weights. This 
-# cost comes in two flavors:
-# 
-# * L1 regularization, where the cost added is proportional to the _absolute value of the weights coefficients_ (i.e. to what is called the 
-# "L1 norm" of the weights).
-# * L2 regularization, where the cost added is proportional to the _square of the value of the weights coefficients_ (i.e. to what is called 
-# the "L2 norm" of the weights). L2 regularization is also called _weight decay_ in the context of neural networks. Don't let the different 
-# name confuse you: weight decay is mathematically the exact same as L2 regularization.
-# 
-# In Keras, weight regularization is added by passing _weight regularizer instances_ to layers as keyword arguments. Let's add L2 weight 
-# regularization to our movie review classification network:
-
-# In[17]:
-
-
-from keras import regularizers
 
 l2_model = models.Sequential()
 l2_model.add(layers.Dense(16, kernel_regularizer=regularizers.l2(0.001),
@@ -212,31 +168,18 @@ l2_model.add(layers.Dense(16, kernel_regularizer=regularizers.l2(0.001),
                           activation='relu'))
 l2_model.add(layers.Dense(1, activation='sigmoid'))
 
-
-# In[18]:
-
-
+# compile的功能是编译模型，对学习过程进行配置，optimizer是优化器，
+# loss是损失函数,这里是分类交叉熵，metrics是指标列表
 l2_model.compile(optimizer='rmsprop',
                  loss='binary_crossentropy',
                  metrics=['acc'])
 
-
-# `l2(0.001)` means that every coefficient in the weight matrix of the layer will add `0.001 * weight_coefficient_value` to the total loss of 
-# the network. Note that because this penalty is _only added at training time_, the loss for this network will be much higher at training 
-# than at test time.
-# 
-# Here's the impact of our L2 regularization penalty:
-
-# In[19]:
-
-
+# 使用512个样本组成的小批量，将模型训练20个轮次，监控留出的10000个样本上的损失和精度，可以通过将验证数据传入validation_data参数来完成
+# 调用fit方法会返回一个History对象，这个对象有一个成员history，它是一个字典，包含训练过程中的所有数据
 l2_model_hist = l2_model.fit(x_train, y_train,
                              epochs=20,
                              batch_size=512,
                              validation_data=(x_test, y_test))
-
-
-# In[30]:
 
 
 l2_model_val_loss = l2_model_hist.history['val_loss']
@@ -246,122 +189,43 @@ plt.plot(epochs, l2_model_val_loss, 'bo', label='L2-regularized model')
 plt.xlabel('Epochs')
 plt.ylabel('Validation loss')
 plt.legend()
-
 plt.show()
 
 
-# 
-# 
-# As you can see, the model with L2 regularization (dots) has become much more resistant to overfitting than the reference model (crosses), 
-# even though both models have the same number of parameters.
-# 
-# As alternatives to L2 regularization, you could use one of the following Keras weight regularizers:
+from tensorflow.keras import regularizers
 
-# In[ ]:
-
-
-from keras import regularizers
-
-# L1 regularization
+# 做L1正则化,绝对值，数值是权重
 regularizers.l1(0.001)
 
-# L1 and L2 regularization at the same time
+#同时做L1和L2正则化，平方
 regularizers.l1_l2(l1=0.001, l2=0.001)
 
-
-# ## Adding dropout
-# 
-# 
-# Dropout is one of the most effective and most commonly used regularization techniques for neural networks, developed by Hinton and his 
-# students at the University of Toronto. Dropout, applied to a layer, consists of randomly "dropping out" (i.e. setting to zero) a number of 
-# output features of the layer during training. Let's say a given layer would normally have returned a vector `[0.2, 0.5, 1.3, 0.8, 1.1]` for a 
-# given input sample during training; after applying dropout, this vector will have a few zero entries distributed at random, e.g. `[0, 0.5, 
-# 1.3, 0, 1.1]`. The "dropout rate" is the fraction of the features that are being zeroed-out; it is usually set between 0.2 and 0.5. At test 
-# time, no units are dropped out, and instead the layer's output values are scaled down by a factor equal to the dropout rate, so as to 
-# balance for the fact that more units are active than at training time.
-# 
-# Consider a Numpy matrix containing the output of a layer, `layer_output`, of shape `(batch_size, features)`. At training time, we would be 
-# zero-ing out at random a fraction of the values in the matrix:
-
-# In[ ]:
-
-
-# At training time: we drop out 50% of the units in the output
-layer_output *= np.randint(0, high=2, size=layer_output.shape)
-
-
-# 
-# At test time, we would be scaling the output down by the dropout rate. Here we scale by 0.5 (because we were previous dropping half the 
-# units):
-
-# In[ ]:
-
-
-# At test time:
-layer_output *= 0.5
-
-
-# 
-# Note that this process can be implemented by doing both operations at training time and leaving the output unchanged at test time, which is 
-# often the way it is implemented in practice:
-
-# In[ ]:
-
-
-# At training time:
-layer_output *= np.randint(0, high=2, size=layer_output.shape)
-# Note that we are scaling *up* rather scaling *down* in this case
-layer_output /= 0.5
-
-
-# 
-# This technique may seem strange and arbitrary. Why would this help reduce overfitting? Geoff Hinton has said that he was inspired, among 
-# other things, by a fraud prevention mechanism used by banks -- in his own words: _"I went to my bank. The tellers kept changing and I asked 
-# one of them why. He said he didn’t know but they got moved around a lot. I figured it must be because it would require cooperation 
-# between employees to successfully defraud the bank. This made me realize that randomly removing a different subset of neurons on each 
-# example would prevent conspiracies and thus reduce overfitting"_.
-# 
-# The core idea is that introducing noise in the output values of a layer can break up happenstance patterns that are not significant (what 
-# Hinton refers to as "conspiracies"), which the network would start memorizing if no noise was present. 
-# 
-# In Keras you can introduce dropout in a network via the `Dropout` layer, which gets applied to the output of layer right before it, e.g.:
-
-# In[ ]:
-
-
-model.add(layers.Dropout(0.5))
-
-
-# Let's add two `Dropout` layers in our IMDB network to see how well they do at reducing overfitting:
-
-# In[22]:
-
-
+# 建立一个序贯模型，是多个网络层的线性堆叠，也就是一条路走到黑，
+#详细信息见：https://keras-cn.readthedocs.io/en/latest/getting_started/sequential_model/
 dpt_model = models.Sequential()
 dpt_model.add(layers.Dense(16, activation='relu', input_shape=(10000,)))
+# dropout比例是被设置为0的特征所占的比例，通常在0.2~0.5范围内，测试时，没有单元被舍弃，
+# 而改成的输出值需要按dropout比率缩小，因为这时比训练时有更多的单元被激活，需要加以平衡。
+# 另外一种实现方式是两个运算都在训练时进行，而在测试时保持不变，训练时对激活矩阵使用dropout,并在
+# 训练时成比例增大，测试时激活矩阵保持不变
 dpt_model.add(layers.Dropout(0.5))
 dpt_model.add(layers.Dense(16, activation='relu'))
 dpt_model.add(layers.Dropout(0.5))
 dpt_model.add(layers.Dense(1, activation='sigmoid'))
 
+# compile的功能是编译模型，对学习过程进行配置，optimizer是优化器，
+# loss是损失函数,这里是分类交叉熵，metrics是指标列表
 dpt_model.compile(optimizer='rmsprop',
                   loss='binary_crossentropy',
                   metrics=['acc'])
 
 
-# In[23]:
-
-
+# 使用512个样本组成的小批量，将模型训练20个轮次，监控留出的10000个样本上的损失和精度，可以通过将验证数据传入validation_data参数来完成
+# 调用fit方法会返回一个History对象，这个对象有一个成员history，它是一个字典，包含训练过程中的所有数据
 dpt_model_hist = dpt_model.fit(x_train, y_train,
                                epochs=20,
                                batch_size=512,
                                validation_data=(x_test, y_test))
-
-
-# Let's plot the results:
-
-# In[32]:
-
 
 dpt_model_val_loss = dpt_model_hist.history['val_loss']
 
@@ -370,16 +234,5 @@ plt.plot(epochs, dpt_model_val_loss, 'bo', label='Dropout-regularized model')
 plt.xlabel('Epochs')
 plt.ylabel('Validation loss')
 plt.legend()
-
 plt.show()
 
-
-# 
-# Again, a clear improvement over the reference network.
-# 
-# To recap: here the most common ways to prevent overfitting in neural networks:
-# 
-# * Getting more training data.
-# * Reducing the capacity of the network.
-# * Adding weight regularization.
-# * Adding dropout.
