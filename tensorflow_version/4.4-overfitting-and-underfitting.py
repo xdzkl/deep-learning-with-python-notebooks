@@ -82,6 +82,21 @@ smaller_model = models.Sequential()
 smaller_model.add(layers.Dense(4, activation='relu', input_shape=(10000,)))
 smaller_model.add(layers.Dense(4, activation='relu'))
 smaller_model.add(layers.Dense(1, activation='sigmoid'))
+smaller_model.summary()
+#Model: "sequential_1"
+#_________________________________________________________________
+#Layer (type)                 Output Shape              Param #   
+#=================================================================
+#dense_3 (Dense)              (None, 4)                 40004     
+#_________________________________________________________________
+#dense_4 (Dense)              (None, 4)                 20        
+#_________________________________________________________________
+#dense_5 (Dense)              (None, 1)                 5         
+#=================================================================
+#Total params: 40,029
+#Trainable params: 40,029
+#Non-trainable params: 0
+#_________________________________________________________________
 
 smaller_model.compile(optimizer='rmsprop',
                       loss='binary_crossentropy',
@@ -107,7 +122,6 @@ original_val_loss = original_hist.history['val_loss']
 smaller_model_val_loss = smaller_model_hist.history['val_loss']
 
 
-
 import matplotlib.pyplot as plt
 
 # b+ is for "blue cross"
@@ -117,7 +131,6 @@ plt.plot(epochs, smaller_model_val_loss, 'bo', label='Smaller model')
 plt.xlabel('Epochs')
 plt.ylabel('Validation loss')
 plt.legend()
-
 plt.show()
 
 # 建立一个更大的模型
@@ -126,6 +139,20 @@ bigger_model.add(layers.Dense(512, activation='relu', input_shape=(10000,)))
 bigger_model.add(layers.Dense(512, activation='relu'))
 bigger_model.add(layers.Dense(1, activation='sigmoid'))
 bigger_model.summary()
+#_________________________________________________________________
+#Layer (type)                 Output Shape              Param #   
+#=================================================================
+#dense_6 (Dense)              (None, 512)               5120512   
+#_________________________________________________________________
+#dense_7 (Dense)              (None, 512)               262656    
+#_________________________________________________________________
+#dense_8 (Dense)              (None, 1)                 513       
+#=================================================================
+#Total params: 5,383,681
+#Trainable params: 5,383,681
+#Non-trainable params: 0
+#_________________________________________________________________
+
 # compile的功能是编译模型，对学习过程进行配置，optimizer是优化器，
 # loss是损失函数,这里是分类交叉熵，metrics是指标列表
 bigger_model.compile(optimizer='rmsprop',
@@ -167,6 +194,21 @@ l2_model.add(layers.Dense(16, kernel_regularizer=regularizers.l2(0.001),
 l2_model.add(layers.Dense(16, kernel_regularizer=regularizers.l2(0.001),
                           activation='relu'))
 l2_model.add(layers.Dense(1, activation='sigmoid'))
+l2_model.summary()
+#Model: "sequential_3"
+#_________________________________________________________________
+#Layer (type)                 Output Shape              Param #   
+#=================================================================
+#dense_9 (Dense)              (None, 16)                160016    
+#_________________________________________________________________
+#dense_10 (Dense)             (None, 16)                272       
+#_________________________________________________________________
+#dense_11 (Dense)             (None, 1)                 17        
+#=================================================================
+#Total params: 160,305
+#Trainable params: 160,305
+#Non-trainable params: 0
+#_________________________________________________________________
 
 # compile的功能是编译模型，对学习过程进行配置，optimizer是优化器，
 # loss是损失函数,这里是分类交叉熵，metrics是指标列表
@@ -212,6 +254,25 @@ dpt_model.add(layers.Dropout(0.5))
 dpt_model.add(layers.Dense(16, activation='relu'))
 dpt_model.add(layers.Dropout(0.5))
 dpt_model.add(layers.Dense(1, activation='sigmoid'))
+dpt_model.summary()
+#Model: "sequential_4"
+#_________________________________________________________________
+#Layer (type)                 Output Shape              Param #   
+#=================================================================
+#dense_12 (Dense)             (None, 16)                160016    
+#_________________________________________________________________
+#dropout (Dropout)            (None, 16)                0         
+#_________________________________________________________________
+#dense_13 (Dense)             (None, 16)                272       
+#_________________________________________________________________
+#dropout_1 (Dropout)          (None, 16)                0         
+#_________________________________________________________________
+#dense_14 (Dense)             (None, 1)                 17        
+#=================================================================
+#Total params: 160,305
+#Trainable params: 160,305
+#Non-trainable params: 0
+#_________________________________________________________________
 
 # compile的功能是编译模型，对学习过程进行配置，optimizer是优化器，
 # loss是损失函数,这里是分类交叉熵，metrics是指标列表
