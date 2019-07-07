@@ -1,82 +1,50 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# 卷积神经网络convnet
 
+import tensorflow as tf
+tf.__version__
+# '2.0.0-alpha0'
 
-import keras
-keras.__version__
+# 导入模型层
+from tensorflow.keras import models
+# 导入层
+from tensorflow.keras import layers
 
-
-# # 5.1 - Introduction to convnets
-# 
-# This notebook contains the code sample found in Chapter 5, Section 1 of [Deep Learning with Python](https://www.manning.com/books/deep-learning-with-python?a_aid=keras&a_bid=76564dff). Note that the original text features far more content, in particular further explanations and figures: in this notebook, you will only find source code and related comments.
-# 
-# ----
-# 
-# First, let's take a practical look at a very simple convnet example. We will use our convnet to classify MNIST digits, a task that you've already been 
-# through in Chapter 2, using a densely-connected network (our test accuracy then was 97.8%). Even though our convnet will be very basic, its 
-# accuracy will still blow out of the water that of the densely-connected model from Chapter 2.
-# 
-# The 6 lines of code below show you what a basic convnet looks like. It's a stack of `Conv2D` and `MaxPooling2D` layers. We'll see in a 
-# minute what they do concretely.
-# Importantly, a convnet takes as input tensors of shape `(image_height, image_width, image_channels)` (not including the batch dimension). 
-# In our case, we will configure our convnet to process inputs of size `(28, 28, 1)`, which is the format of MNIST images. We do this via 
-# passing the argument `input_shape=(28, 28, 1)` to our first layer.
-
-# In[2]:
-
-
-from keras import layers
-from keras import models
-
+# 每个conv2d和maxpooling2D层的输出都是一个形状为（height,width,channels)的3D向量
+# 建立一个序贯模型，是多个网络层的线性堆叠，也就是一条路走到黑，
+#详细信息见：https://keras-cn.readthedocs.io/en/latest/getting_started/sequential_model/
 model = models.Sequential()
+# 添加一个二维卷积层，32代表卷积核的数量，卷积核大小是3*3，激活函数是relu,输入维度是28*28*1
+# 输出维度是26，26，32
 model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))
+# 添加一个最大池化层，池化核大小是2*2
+# 输人维度是26，26，32，# 输出维度是13，13，32
 model.add(layers.MaxPooling2D((2, 2)))
+
+# 添加一个二维卷积层，32代表卷积核的数量，卷积核大小是3*3，激活函数是relu,输入维度是32*32*1
+# 输入维度是13，13，32，输出维度是11，11，64
 model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+
+# 添加一个最大池化层，池化核大小是2*2
+# 输入维度是11，11，64，输出维度是5，5，64
 model.add(layers.MaxPooling2D((2, 2)))
+
+# 添加一个二维卷积层，32代表卷积核的数量，卷积核大小是3*3，激活函数是relu,输入维度是32*32*1
+# 输入维度是5，5，64，输出维度是3，3，64
 model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-
-
-# Let's display the architecture of our convnet so far:
-
-# In[3]:
-
 
 model.summary()
 
-
-# You can see above that the output of every `Conv2D` and `MaxPooling2D` layer is a 3D tensor of shape `(height, width, channels)`. The width 
-# and height dimensions tend to shrink as we go deeper in the network. The number of channels is controlled by the first argument passed to 
-# the `Conv2D` layers (e.g. 32 or 64).
-# 
-# The next step would be to feed our last output tensor (of shape `(3, 3, 64)`) into a densely-connected classifier network like those you are 
-# already familiar with: a stack of `Dense` layers. These classifiers process vectors, which are 1D, whereas our current output is a 3D tensor. 
-# So first, we will have to flatten our 3D outputs to 1D, and then add a few `Dense` layers on top:
-
-# In[4]:
-
-
+# 将3D输出展平为1D
 model.add(layers.Flatten())
+# 添加全连接层，输出维度是64，激活函数是relu,输入维度是
 model.add(layers.Dense(64, activation='relu'))
+# 添加全连接层，输出维度是10，激活函数是softmax，输入维度是64
 model.add(layers.Dense(10, activation='softmax'))
 
-
-# We are going to do 10-way classification, so we use a final layer with 10 outputs and a softmax activation. Now here's what our network 
-# looks like:
-
-# In[5]:
-
-
 model.summary()
-
-
-# As you can see, our `(3, 3, 64)` outputs were flattened into vectors of shape `(576,)`, before going through two `Dense` layers.
-# 
-# Now, let's train our convnet on the MNIST digits. We will reuse a lot of the code we have already covered in the MNIST example from Chapter 
-# 2.
-
-# In[6]:
 
 
 from keras.datasets import mnist
@@ -93,29 +61,15 @@ test_images = test_images.astype('float32') / 255
 train_labels = to_categorical(train_labels)
 test_labels = to_categorical(test_labels)
 
-
-# In[7]:
-
-
 model.compile(optimizer='rmsprop',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 model.fit(train_images, train_labels, epochs=5, batch_size=64)
 
 
-# Let's evaluate the model on the test data:
-
-# In[8]:
-
-
 test_loss, test_acc = model.evaluate(test_images, test_labels)
-
-
-# In[9]:
 
 
 test_acc
 
 
-# While our densely-connected network from Chapter 2 had a test accuracy of 97.8%, our basic convnet has a test accuracy of 99.3%: we 
-# decreased our error rate by 68% (relative). Not bad! 
