@@ -61,16 +61,20 @@ def build_model():
 import numpy as np
 
 k = 4
+# len(train_data)是404，num_val_sample是101
 num_val_samples = len(train_data) // k
+# num_epochs是轮次
 num_epochs = 100
+# 所有的分数
 all_scores = []
 for i in range(k):
+#     第i折
     print('processing fold #', i)
-    # Prepare the validation data: data from partition # k
+#    准备验证数据，第k个分区的数据
     val_data = train_data[i * num_val_samples: (i + 1) * num_val_samples]
     val_targets = train_targets[i * num_val_samples: (i + 1) * num_val_samples]
 
-    # Prepare the training data: data from all other partitions
+    # 准备训练数据，其他所有分区的数据
     partial_train_data = np.concatenate(
         [train_data[:i * num_val_samples],
          train_data[(i + 1) * num_val_samples:]],
@@ -80,43 +84,35 @@ for i in range(k):
          train_targets[(i + 1) * num_val_samples:]],
         axis=0)
 
-    # Build the Keras model (already compiled)
+    # 构建模型，已经编译过的
     model = build_model()
-    # Train the model (in silent mode, verbose=0)
+    # 训练模型（静默模式，verbose=0）
     model.fit(partial_train_data, partial_train_targets,
               epochs=num_epochs, batch_size=1, verbose=0)
-    # Evaluate the model on the validation data
+#    在验证数据上评估模型
     val_mse, val_mae = model.evaluate(val_data, val_targets, verbose=0)
     all_scores.append(val_mae)
 
-
-
 all_scores
-
-
+#[2.2945063, 2.591721, 2.8060346, 2.2932646]
 
 np.mean(all_scores)
+#2.4963818
 
-
-
-
-
-from keras import backend as K
-
-# Some memory clean-up
+from tensorflow.keras import backend as K
+# 销毁当前的TF图并创建一个新图，有助于避免旧模型/涂层混乱
 K.clear_session()
 
-
-
+# 设置500个轮次
 num_epochs = 500
 all_mae_histories = []
 for i in range(k):
     print('processing fold #', i)
-    # Prepare the validation data: data from partition # k
+    # 准备验证数据，第k个分区的数据
     val_data = train_data[i * num_val_samples: (i + 1) * num_val_samples]
     val_targets = train_targets[i * num_val_samples: (i + 1) * num_val_samples]
 
-    # Prepare the training data: data from all other partitions
+#    ·准备训练数据，其他所有分区的数据
     partial_train_data = np.concatenate(
         [train_data[:i * num_val_samples],
          train_data[(i + 1) * num_val_samples:]],
@@ -126,28 +122,35 @@ for i in range(k):
          train_targets[(i + 1) * num_val_samples:]],
         axis=0)
 
-    # Build the Keras model (already compiled)
+    # 构建模型，已经编译过的
     model = build_model()
-    # Train the model (in silent mode, verbose=0)
+    # 训练模型（静默模式，verbose=0)
     history = model.fit(partial_train_data, partial_train_targets,
                         validation_data=(val_data, val_targets),
                         epochs=num_epochs, batch_size=1, verbose=0)
-    mae_history = history.history['val_mean_absolute_error']
+#    计算每个轮次中所有折MAE的平均值
+    mae_history = history.history['val_mae']
     all_mae_histories.append(mae_history)
 
-
-# We can then compute the average of the per-epoch MAE scores for all folds:
-
-# In[23]:
 
 
 average_mae_history = [
     np.mean([x[i] for x in all_mae_histories]) for i in range(num_epochs)]
+#Out[111]: 
+#[4.3805985,
+# 3.3160563,
+# 2.902602,
+# 2.7533863,
+# 2.7148235,
+# 2.79872,
+# 2.80879,
+# 2.6642942,
+# 2.5138829,
+# 2.6127791
+# ···]
+len(average_mae_history)
+#Out[112]: 500
 
-
-# Let's plot this:
-
-# In[26]:
 
 
 import matplotlib.pyplot as plt
@@ -157,14 +160,6 @@ plt.xlabel('Epochs')
 plt.ylabel('Validation MAE')
 plt.show()
 
-
-# 
-# It may be a bit hard to see the plot due to scaling issues and relatively high variance. Let's:
-# 
-# * Omit the first 10 data points, which are on a different scale from the rest of the curve.
-# * Replace each point with an exponential moving average of the previous points, to obtain a smooth curve.
-
-# In[38]:
 
 
 def smooth_curve(points, factor=0.9):
@@ -177,6 +172,7 @@ def smooth_curve(points, factor=0.9):
       smoothed_points.append(point)
   return smoothed_points
 
+# 删除前10个数据点，将每个数据点替换为前面数据点的指数移动平均值，以得到光滑的曲线
 smooth_mae_history = smooth_curve(average_mae_history[10:])
 
 plt.plot(range(1, len(smooth_mae_history) + 1), smooth_mae_history)
@@ -185,50 +181,12 @@ plt.ylabel('Validation MAE')
 plt.show()
 
 
-# 
-# According to this plot, it seems that validation MAE stops improving significantly after 80 epochs. Past that point, we start overfitting.
-# 
-# Once we are done tuning other parameters of our model (besides the number of epochs, we could also adjust the size of the hidden layers), we 
-# can train a final "production" model on all of the training data, with the best parameters, then look at its performance on the test data:
-
-# In[28]:
-
-
-# Get a fresh, compiled model.
+# 一个全新的编译好的模型
 model = build_model()
-# Train it on the entirety of the data.
+# 在所有训练数据上训练模型
 model.fit(train_data, train_targets,
           epochs=80, batch_size=16, verbose=0)
 test_mse_score, test_mae_score = model.evaluate(test_data, test_targets)
 
-
-# In[29]:
-
-
 test_mae_score
-
-
-# We are still off by about \$2,550.
-
-# ## Wrapping up
-# 
-# 
-# Here's what you should take away from this example:
-# 
-# * Regression is done using different loss functions from classification; Mean Squared Error (MSE) is a commonly used loss function for 
-# regression.
-# * Similarly, evaluation metrics to be used for regression differ from those used for classification; naturally the concept of "accuracy" 
-# does not apply for regression. A common regression metric is Mean Absolute Error (MAE).
-# * When features in the input data have values in different ranges, each feature should be scaled independently as a preprocessing step.
-# * When there is little data available, using K-Fold validation is a great way to reliably evaluate a model.
-# * When little training data is available, it is preferable to use a small network with very few hidden layers (typically only one or two), 
-# in order to avoid severe overfitting.
-# 
-# This example concludes our series of three introductory practical examples. You are now able to handle common types of problems with vector data input:
-# 
-# * Binary (2-class) classification.
-# * Multi-class, single-label classification.
-# * Scalar regression.
-# 
-# In the next chapter, you will acquire a more formal understanding of some of the concepts you have encountered in these first examples, 
-# such as data preprocessing, model evaluation, and overfitting.
+#18.600066241096048 预测的房价和实际价格相差约186000美元
