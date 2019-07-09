@@ -174,7 +174,7 @@ model.summary()
 print('This is the number of trainable weights '
       'before freezing the conv base:', len(model.trainable_weights))
 
-
+# trainable设置的目的是冻结网络，不再进行训练
 conv_base.trainable = False
 
 
@@ -194,13 +194,13 @@ train_datagen = ImageDataGenerator(
       horizontal_flip=True,
       fill_mode='nearest')
 
-# Note that the validation data should not be augmented!
+# 注意，不能增强验证数据
 test_datagen = ImageDataGenerator(rescale=1./255)
 
 train_generator = train_datagen.flow_from_directory(
-        # This is the target directory
+#         目标目录
         train_dir,
-        # All images will be resized to 150x150
+#       将所有图像的大小调整为150*150
         target_size=(150, 150),
         batch_size=20,
         # Since we use binary_crossentropy loss, we need binary labels
@@ -297,8 +297,13 @@ conv_base.summary()
 #_________________________________________________________________
 
 
+# 重新训练网络
+# 目的是模型微调，与特征提取互为补充，微调是指将其顶部几层"解冻"，并将这解冻的几层
+#和新增部分（本文是全练级分类器）联合训练，之所以叫微调，是因为它只是略微调整了所复用
+#模型中更加抽象的部分
 conv_base.trainable = True
 
+# 只将第卷积块5解冻，进行微调
 set_trainable = False
 for layer in conv_base.layers:
     if layer.name == 'block5_conv1':
@@ -321,7 +326,7 @@ history = model.fit_generator(
       validation_data=validation_generator,
       validation_steps=50)
 
-
+# 保存模型
 model.save('cats_and_dogs_small_4.h5')
 
 
