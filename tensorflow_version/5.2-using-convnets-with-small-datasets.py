@@ -222,6 +222,7 @@ train_datagen = ImageDataGenerator(rescale=1./255)
 test_datagen = ImageDataGenerator(rescale=1./255)
 
 
+# 以文件夹路径为参数，生成经过数据提升，归一化之后的数据，在一个无线循环中无限产生batch数据
 train_generator = train_datagen.flow_from_directory(
         # This is the target directory
         train_dir,
