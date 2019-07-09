@@ -5,26 +5,60 @@ import tensorflow as tf
 print(tf.__version__)
 # 2.0.0-alpha0
 
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
-model = load_model('cats_and_dogs_small_2.h5')
-model.summary()  # As a reminder.
+# 导入模型
+model = load_model('./cats_and_dogs_small_2.h5')
+# 作为提醒
+model.summary() 
+#Model: "sequential_3"
+#_________________________________________________________________
+#Layer (type)                 Output Shape              Param #   
+#=================================================================
+#conv2d_11 (Conv2D)           (None, 148, 148, 32)      896       
+#_________________________________________________________________
+#max_pooling2d_10 (MaxPooling (None, 74, 74, 32)        0         
+#_________________________________________________________________
+#conv2d_12 (Conv2D)           (None, 72, 72, 64)        18496     
+#_________________________________________________________________
+#max_pooling2d_11 (MaxPooling (None, 36, 36, 64)        0         
+#_________________________________________________________________
+#conv2d_13 (Conv2D)           (None, 34, 34, 128)       73856     
+#_________________________________________________________________
+#max_pooling2d_12 (MaxPooling (None, 17, 17, 128)       0         
+#_________________________________________________________________
+#conv2d_14 (Conv2D)           (None, 15, 15, 128)       147584    
+#_________________________________________________________________
+#max_pooling2d_13 (MaxPooling (None, 7, 7, 128)         0         
+#_________________________________________________________________
+#flatten_3 (Flatten)          (None, 6272)              0         
+#_________________________________________________________________
+#dropout (Dropout)            (None, 6272)              0         
+#_________________________________________________________________
+#dense_6 (Dense)              (None, 512)               3211776   
+#_________________________________________________________________
+#dense_7 (Dense)              (None, 1)                 513       
+#=================================================================
+#Total params: 3,453,121
+#Trainable params: 3,453,121
+#Non-trainable params: 0
+#_________________________________________________________________
 
 
-img_path = '/Users/fchollet/Downloads/cats_and_dogs_small/test/cats/cat.1700.jpg'
+img_path = 'F:\zkl_repository\pic\\all_pic\cat.1700.jpg'
 
-# We preprocess the image into a 4D tensor
-from keras.preprocessing import image
+# 将图像预处理为一个4D张量
+from tensorflow.keras.preprocessing import image
 import numpy as np
 
 img = image.load_img(img_path, target_size=(150, 150))
 img_tensor = image.img_to_array(img)
+# 处理成一个4D张量
 img_tensor = np.expand_dims(img_tensor, axis=0)
-# Remember that the model was trained on inputs
-# that were preprocessed in the following way:
+# 请记住，训练模型的输入数据都用这种方法预处理
 img_tensor /= 255.
 
-# Its shape is (1, 150, 150, 3)
+# 其形状为（1，150，150，3）
 print(img_tensor.shape)
 
 
@@ -34,60 +68,55 @@ plt.imshow(img_tensor[0])
 plt.show()
 
 
-from keras import models
+from tensorflow.keras import models
 
-# Extracts the outputs of the top 8 layers:
+# 提取前8层的输出
 layer_outputs = [layer.output for layer in model.layers[:8]]
-# Creates a model that will return these outputs, given the model input:
+# 创建一个模型，给定模型的输入，可以返回这些输出
 activation_model = models.Model(inputs=model.input, outputs=layer_outputs)
-
-
+# 返回8个numpy数组组成的列表，每个层激活对应一个numpy数组
 activations = activation_model.predict(img_tensor)
-
-
-
 first_layer_activation = activations[0]
 print(first_layer_activation.shape)
+# (1, 148, 148, 32)
 
 
+# 将第3个通道可视化
 import matplotlib.pyplot as plt
-
 plt.matshow(first_layer_activation[0, :, :, 3], cmap='viridis')
 plt.show()
-
-
-
+# 将第30个通道可视化
 plt.matshow(first_layer_activation[0, :, :, 30], cmap='viridis')
 plt.show()
 
-import keras
+from tensorflow import keras
 
-# These are the names of the layers, so can have them as part of our plot
+# 层的名称，这样可以将这些名称画到图中
 layer_names = []
 for layer in model.layers[:8]:
     layer_names.append(layer.name)
 
 images_per_row = 16
 
-# Now let's display our feature maps
+# 显示特征图
 for layer_name, layer_activation in zip(layer_names, activations):
-    # This is the number of features in the feature map
+    # 特征图中特征的个数
     n_features = layer_activation.shape[-1]
 
-    # The feature map has shape (1, size, size, n_features)
+    # 特征图的形状为（1，size,seize,n_features)
     size = layer_activation.shape[1]
 
-    # We will tile the activation channels in this matrix
+    # 在这个矩阵中将激活通道平铺
     n_cols = n_features // images_per_row
     display_grid = np.zeros((size * n_cols, images_per_row * size))
 
-    # We'll tile each filter into this big horizontal grid
+    # 将每个过滤器平铺到一个大的水平网格中
     for col in range(n_cols):
         for row in range(images_per_row):
             channel_image = layer_activation[0,
                                              :, :,
                                              col * images_per_row + row]
-            # Post-process the feature to make it visually palatable
+            # 对特征进行后处理，使其看起来更美观
             channel_image -= channel_image.mean()
             channel_image /= channel_image.std()
             channel_image *= 64
@@ -96,7 +125,7 @@ for layer_name, layer_activation in zip(layer_names, activations):
             display_grid[col * size : (col + 1) * size,
                          row * size : (row + 1) * size] = channel_image
 
-    # Display the grid
+    # 显示网格
     scale = 1. / size
     plt.figure(figsize=(scale * display_grid.shape[1],
                         scale * display_grid.shape[0]))
@@ -107,8 +136,9 @@ for layer_name, layer_activation in zip(layer_names, activations):
 plt.show()
 
 
-from keras.applications import VGG16
-from keras import backend as K
+from tensorflow.keras.applications import VGG16
+from tensorflow.keras import backend as K
+import tensorflow as tf
 
 model = VGG16(weights='imagenet',
               include_top=False)
@@ -119,56 +149,58 @@ filter_index = 0
 layer_output = model.get_layer(layer_name).output
 loss = K.mean(layer_output[:, :, :, filter_index])
 
-
-grads = K.gradients(loss, model.input)[0]
-
-# We add 1e-5 before dividing so as to avoid accidentally dividing by 0.
-grads /= (K.sqrt(K.mean(K.square(grads))) + 1e-5)
-
-
+# 这个函数不知道应该改成什么，现在报错
+#with tf.GradientTape() as g:
+#    g.watch(model.input)
+#    loss = K.mean(layer_output[:, :, :, filter_index])
+grads = K.gradients(loss, model.input)
+#
+## We add 1e-5 before dividing so as to avoid accidentally dividing by 0.
+#grads /= (K.sqrt(K.mean(K.square(grads))) + 1e-5)
+#
+#
 iterate = K.function([model.input], [loss, grads])
 
 # Let's test it:
 import numpy as np
 loss_value, grads_value = iterate([np.zeros((1, 150, 150, 3))])
 
-# We start from a gray image with some noise
+# 从一张带有噪声的灰度图像开始
 input_img_data = np.random.random((1, 150, 150, 3)) * 20 + 128.
 
-# Run gradient ascent for 40 steps
-step = 1.  # this is the magnitude of each gradient update
+# 运行40次，梯度上升
+step = 1. 
 for i in range(40):
-    # Compute the loss value and gradient value
+    #计算损失值和梯度值
     loss_value, grads_value = iterate([input_img_data])
-    # Here we adjust the input image in the direction that maximizes the loss
+    # 沿着让损失最大化的方向调节输入图像
     input_img_data += grads_value * step
 
 def deprocess_image(x):
-    # normalize tensor: center on 0., ensure std is 0.1
+    # 对张量做标准化，使其均值为0，标准差为0.1
     x -= x.mean()
     x /= (x.std() + 1e-5)
     x *= 0.1
 
-    # clip to [0, 1]
+    # 将x裁剪到[0,1]之间
     x += 0.5
     x = np.clip(x, 0, 1)
 
-    # convert to RGB array
+    # 转换成RGB数组
     x *= 255
     x = np.clip(x, 0, 255).astype('uint8')
     return x
 
 
 def generate_pattern(layer_name, filter_index, size=150):
-    # Build a loss function that maximizes the activation
-    # of the nth filter of the layer considered.
+#     构建一个损失函数，将该层的第n个过滤器的激活最大化
     layer_output = model.get_layer(layer_name).output
     loss = K.mean(layer_output[:, :, :, filter_index])
 
-    # Compute the gradient of the input picture wrt this loss
+    # 计算这个损失相对于输入图像的梯度
     grads = K.gradients(loss, model.input)[0]
 
-    # Normalization trick: we normalize the gradient
+    # 标准化技巧：将梯度标准化
     grads /= (K.sqrt(K.mean(K.square(grads))) + 1e-5)
 
     # This function returns the loss and grads given the input picture
@@ -217,34 +249,30 @@ for layer_name in ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1
     plt.show()
 
 
-from keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.vgg16 import VGG16
 
 K.clear_session()
 
-# Note that we are including the densely-connected classifier on top;
-# all previous times, we were discarding it.
+# 注意，网络中包括了密集连接诶分类器，在前面的例子中，我们都舍弃了这个分类器
 model = VGG16(weights='imagenet')
 
-
-from keras.preprocessing import image
-from keras.applications.vgg16 import preprocess_input, decode_predictions
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.vgg16 import preprocess_input, decode_predictions
 import numpy as np
 
-# The local path to our target image
-img_path = '/Users/fchollet/Downloads/creative_commons_elephant.jpg'
+# 目标图片路径
+img_path = 'F:\zkl_repository\deep-learning-with-python-notebooks\creative_commons_elephant.jpg'
 
-# `img` is a PIL image of size 224x224
+# 大小为2248224的python图像库图像
 img = image.load_img(img_path, target_size=(224, 224))
 
-# `x` is a float32 Numpy array of shape (224, 224, 3)
+#  形状为224*224*3的float32格式的numpy数组
 x = image.img_to_array(img)
 
-# We add a dimension to transform our array into a "batch"
-# of size (1, 224, 224, 3)
+#添加一个维度，将数组转换成（1，224，224，3）
 x = np.expand_dims(x, axis=0)
 
-# Finally we preprocess the batch
-# (this does channel-wise color normalization)
+#对批量进行预处理（按通道进行颜色标准化）
 x = preprocess_input(x)
 
 preds = model.predict(x)
@@ -253,19 +281,16 @@ print('Predicted:', decode_predictions(preds, top=3)[0])
 
 np.argmax(preds[0])
 
-# This is the "african elephant" entry in the prediction vector
+# 预测向量中非洲象的元素
 african_elephant_output = model.output[:, 386]
 
-# The is the output feature map of the `block5_conv3` layer,
-# the last convolutional layer in VGG16
+# block5_conv3层的输出特征图，它是VGG16的最后一个卷积层
 last_conv_layer = model.get_layer('block5_conv3')
 
-# This is the gradient of the "african elephant" class with regard to
-# the output feature map of `block5_conv3`
+# 非洲象类别相对于block5_conv3的输出特征图的梯度
 grads = K.gradients(african_elephant_output, last_conv_layer.output)[0]
 
-# This is a vector of shape (512,), where each entry
-# is the mean intensity of the gradient over a specific feature map channel
+#形状为(512,)的向量，每个元素是特定特征图通道的梯度平均大小
 pooled_grads = K.mean(grads, axis=(0, 1, 2))
 
 # This function allows us to access the values of the quantities we just defined:
