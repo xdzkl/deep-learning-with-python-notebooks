@@ -1,31 +1,27 @@
 #!/usr/bin/env python
 # coding: utf-8
+
 import tensorflow as tf
 print(tf.__version__)
 # 2.0.0-alpha0
 
 import numpy as np
 
-
 samples = ['The cat sat on the mat.', 'The dog ate my homework.']
 
-# First, build an index of all tokens in the data.
+# 构建数据中所有标记的索引
 token_index = {}
 for sample in samples:
-    # We simply tokenize the samples via the `split` method.
-    # in real life, we would also strip punctuation and special characters
-    # from the samples.
+#    利用split方法对样本进行分词，在实际应用中，还需要从样本中去掉标点和特殊字符
     for word in sample.split():
         if word not in token_index:
-            # Assign a unique index to each unique word
+#            为每个唯一单词指定一个唯一索引，注意，没有为索引标号0指定单词
             token_index[word] = len(token_index) + 1
-            # Note that we don't attribute index 0 to anything.
 
-# Next, we vectorize our samples.
-# We will only consider the first `max_length` words in each sample.
+# 对文本进行分词，只考虑每个样本前max_lenght个单词
 max_length = 10
 
-# This is where we store our results:
+# 将结果保存在results中
 results = np.zeros((len(samples), max_length, max(token_index.values()) + 1))
 for i, sample in enumerate(samples):
     for j, word in list(enumerate(sample.split()))[:max_length]:
@@ -36,7 +32,8 @@ for i, sample in enumerate(samples):
 import string
 
 samples = ['The cat sat on the mat.', 'The dog ate my homework.']
-characters = string.printable  # All printable ASCII characters.
+# 所有可打印的ascii字符
+characters = string.printable  
 token_index = dict(zip(characters, range(1, len(characters) + 1)))
 
 max_length = 50
@@ -47,21 +44,20 @@ for i, sample in enumerate(samples):
         results[i, j, index] = 1.
 
 
-from keras.preprocessing.text import Tokenizer
+
+from tensorflow.keras.preprocessing.text import Tokenizer
 
 samples = ['The cat sat on the mat.', 'The dog ate my homework.']
 
-# We create a tokenizer, configured to only take
-# into account the top-1000 most common words
+# 创建一个分词器，设置为只考虑前1000个最常见的分词
 tokenizer = Tokenizer(num_words=1000)
-# This builds the word index
+#构建单词索引
 tokenizer.fit_on_texts(samples)
 
-# This turns strings into lists of integer indices.
+# 将字符串转换为整数索引组成的列表
 sequences = tokenizer.texts_to_sequences(samples)
 
-# You could also directly get the one-hot binary representations.
-# Note that other vectorization modes than one-hot encoding are supported!
+# 也可以直接得到one-hot二进制表示，这个分词器也支持除one-hot编码外的其他向量化模式
 one_hot_results = tokenizer.texts_to_matrix(samples, mode='binary')
 
 # This is how you can recover the word index that was computed
@@ -78,8 +74,7 @@ max_length = 10
 results = np.zeros((len(samples), max_length, dimensionality))
 for i, sample in enumerate(samples):
     for j, word in list(enumerate(sample.split()))[:max_length]:
-        # Hash the word into a "random" integer index
-        # that is between 0 and 1000
+# 将单词散列为0-1000范围内的一个随机整数索引
         index = abs(hash(word)) % dimensionality
         results[i, j, index] = 1.
 
