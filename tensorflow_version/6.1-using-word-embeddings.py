@@ -5,13 +5,13 @@ import tensorflow as tf
 print(tf.__version__)
 # 2.0.0-alpha0
 
-from keras.layers import Embedding
+from tensorflow.keras.layers import Embedding
 
 embedding_layer = Embedding(1000, 64)
 
 
-from keras.datasets import imdb
-from keras import preprocessing
+from tensorflow.keras.datasets import imdb
+from tensorflow.keras import preprocessing
 
 # Number of words to consider as features
 max_features = 10000
@@ -28,8 +28,8 @@ x_train = preprocessing.sequence.pad_sequences(x_train, maxlen=maxlen)
 x_test = preprocessing.sequence.pad_sequences(x_test, maxlen=maxlen)
 
 
-from keras.models import Sequential
-from keras.layers import Flatten, Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Flatten, Dense
 
 model = Sequential()
 # We specify the maximum input length to our Embedding layer
@@ -69,8 +69,8 @@ for label_type in ['neg', 'pos']:
                 labels.append(1)
 
 
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
 
 maxlen = 100  # We will cut reviews after 100 words
@@ -129,8 +129,8 @@ for word, i in word_index.items():
             embedding_matrix[i] = embedding_vector
 
 
-from keras.models import Sequential
-from keras.layers import Embedding, Flatten, Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, Flatten, Dense
 
 model = Sequential()
 model.add(Embedding(max_words, embedding_dim, input_length=maxlen))
@@ -177,8 +177,8 @@ plt.legend()
 plt.show()
 
 
-from keras.models import Sequential
-from keras.layers import Embedding, Flatten, Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, Flatten, Dense
 
 model = Sequential()
 model.add(Embedding(max_words, embedding_dim, input_length=maxlen))
